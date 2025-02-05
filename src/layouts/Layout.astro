@@ -19,6 +19,9 @@ import { defaultFavicons } from '../constants/icon'
 import type { Favicon } from '../types/config'
 import { url, pathsEqual } from '../utils/url-utils'
 import 'katex/dist/katex.css'
+import Analytics from '@vercel/analytics/astro';
+import SpeedInsights from "@vercel/speed-insights/astro"
+
 
 interface Props {
   title?: string
@@ -42,7 +45,7 @@ if (!banner || typeof banner !== 'string' || banner.trim() === '') {
   banner = siteConfig.banner.src
 }
 
-// TODO don't use post cover as banner for now
+// TODO: don't use post cover as banner for now
 banner = siteConfig.banner.src
 
 const enableBanner = siteConfig.banner.enable
@@ -81,6 +84,8 @@ const bannerOffset =
 		<title>{pageTitle}</title>
 
 		<meta charset="UTF-8" />
+		<Analytics />
+		<SpeedInsights/>
 		<meta name="description" content={description || pageTitle}>
 		<meta name="author" content={profileConfig.name}>
 
