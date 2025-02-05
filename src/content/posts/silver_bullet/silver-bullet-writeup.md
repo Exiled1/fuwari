@@ -343,3 +343,80 @@ let new_power: i32 = bullet->power + remaining_bytes;
 Yes, the power gets reassigned, but we're getting the `strlen` of the temporary buffer, not our bullet buffer. The temp buffer get's written to by the `read_input` call ***before*** the `strncat` jank-ness. So the temporary buffer actually does have 1 byte from our first `power_up` call.
 
 Howeeeever... Once we leave and re-call `power_up`, our buffer concats our ridiculous garbage values and that definitely gives us enough power to take out the werewolf.
+
+## Boss Fight
+Continuing from the above state.
+
+```
++++++++++++++++++++++++++++
+       Silver Bullet
++++++++++++++++++++++++++++
+ 1. Create a Silver Bullet
+ 2. Power up Silver Bullet
+ 3. Beat the Werewolf
+ 4. Return
++++++++++++++++++++++++++++
+Your choice :2
+Give me your another description of bullet :BBBBBBBBCCCCCCCC
+Your new power is : 1111638545
+Enjoy it !
+```
+
+Now would you LOOK at that, we were right! And not only that, our hunch was pretty spot on, although I have no clue exactly how the power value gets calculated. To figure that out I'd have to `gdb` into the program and so far it doesn't seem worth the effort yet. However, THEORETICALLY, we should be writing over the bullet struct and into wherever that is. I swear we'll `gdb` and figure out exactly what's happening in a bit, for now I like to imagine I'm on a time crunch for a CTF so lets keep going until we need more in depth info, for now `1111638545` is pretty dang close to `MAX_INT` size so we should be able to beat the wolf! (Oh wait I forgot to look at that function... Eh, hopefully it's not a single shot).
+
+### Hopefully Not Foreshadowing
+```
++++++++++++++++++++++++++++
+       Silver Bullet
++++++++++++++++++++++++++++
+ 1. Create a Silver Bullet
+ 2. Power up Silver Bullet
+ 3. Beat the Werewolf
+ 4. Return
++++++++++++++++++++++++++++
+Your choice :3
+>----------- Werewolf -----------<
+ + NAME : Gin
+ + HP : 2147483647
+>--------------------------------<
+Try to beat it .....
+Sorry ... It still alive !!
+Give me more power !!
+
++++++++++++++++++++++++++++
+       Silver Bullet
++++++++++++++++++++++++++++
+ 1. Create a Silver Bullet
+ 2. Power up Silver Bullet
+ 3. Beat the Werewolf
+ 4. Return
++++++++++++++++++++++++++++
+Your choice :3
+>----------- Werewolf -----------<
+ + NAME : Gin
+ + HP : 1035845102
+>--------------------------------<
+Try to beat it .....
+Oh ! You win !!
+fish: Job 2, './silver_bullet_patched' terminated by signal SIGSEGV (Address boundary error)
+```
+
+WAIT, NOT FORESHADOWING AT ALL! Tbh I was fully prepared for another chapter where the whole goal was to find the PERFECT input to get exactly the max integet size. Praise the sun lads.
+
+Hol up.
+
+> fish: Job 2, './silver_bullet_patched' terminated by signal SIGSEGV (Address boundary error)
+
+ALSO, AYO THAT'S A STACK SMASH (probably). **Time to boot up gdb to see what's going on**, and also start working on our exploit script. We should at least set up the menu manipulation portion so that when we eventually get an idea for an exploit we don't have to care about buffering and just worry about the concepts.
+
+# ACT_0x04: Really? In Front Of My Salad?
+
+Aight, let's lay out the goals of our debug sesh:
+
+1. Figure out wtf is happening once we beat the werewolf.
+2. Maybe see what the correlation between inputs and the third power calculation (the one that gives us the thicc values).
+3. See if we have control over the return address.
+
+With that laid out, 
+
+WIP.
