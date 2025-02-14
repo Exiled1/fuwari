@@ -67,7 +67,8 @@
     "@types/mdast": "^4.0.4",
     "@types/sanitize-html": "^2.13.0",
     "postcss-import": "^16.1.0",
-    "postcss-nesting": "^13.0.1"
+    "postcss-nesting": "^13.0.1",
+    "prettier": "3.5.1"
   },
-  "packageManager": "pnpm@10.2.0"
+  "packageManager": "pnpm@10.4.0"
 }
