@@ -21,4 +21,3 @@ category: Examples
 draft: false
 ---
 ```
-

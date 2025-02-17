@@ -20,8 +20,14 @@
     // "source.organizeImports.biome": "always"
   },
   "frontMatter.dashboard.openOnStart": false,
-
+  "cSpell.enabledFileTypes": {
+    "markdown": true
+  },
+  // "[astro]": {
+  //   "editor.defaultFormatter": "astro-build.astro-vscode"
+  // },
   "prettier.documentSelectors": ["**/*.astro"],
+
   "[astro]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
