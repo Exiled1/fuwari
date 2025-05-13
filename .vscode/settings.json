@@ -1,34 +1,34 @@
 {
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnSave": true,
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
 
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[javascriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit"
-    // "quickfix.biome": "always",
-    // "source.organizeImports.biome": "always"
-  },
-  "frontMatter.dashboard.openOnStart": false,
-  "cSpell.enabledFileTypes": {
-    "markdown": true
-  },
-  // "[astro]": {
-  //   "editor.defaultFormatter": "astro-build.astro-vscode"
-  // },
-  "prettier.documentSelectors": ["**/*.astro"],
+	"[javascript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[javascriptreact]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[typescript]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"editor.codeActionsOnSave": {
+		"source.fixAll": "explicit"
+		// "quickfix.biome": "always",
+		// "source.organizeImports.biome": "always"
+	},
+	"frontMatter.dashboard.openOnStart": false,
+	"cSpell.enabledFileTypes": {
+		"markdown": true
+	},
+	// "[astro]": {
+	//   "editor.defaultFormatter": "astro-build.astro-vscode"
+	// },
+	"prettier.documentSelectors": ["**/*.astro"],
 
-  "[astro]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+	"[astro]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	}
 }

@@ -9,7 +9,7 @@ interface Props {
 
 let { headings = [] } = Astro.props;
 
-let minDepth = 10
+let minDepth = 10;
 for (const heading of headings) {
 	minDepth = Math.min(minDepth, heading.depth);
 }
@@ -27,9 +27,9 @@ const removeTailingHash = (text: string) => {
 	return text.substring(0, lastIndexOfHash);
 };
 
-let heading1Count = 1
+let heading1Count = 1;
 
-const maxLevel = siteConfig.toc.depth
+const maxLevel = siteConfig.toc.depth;
 ---
 {isPostsRoute &&
 <table-of-contents class:list={[className, "group"]}>
