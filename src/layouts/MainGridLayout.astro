@@ -3,13 +3,13 @@ import Footer from "@components/Footer.astro";
 import Navbar from "@components/Navbar.astro";
 import BackToTop from "@components/control/BackToTop.astro";
 import SideBar from "@components/widget/SideBar.astro";
+import Analytics from "@vercel/analytics/astro";
+import SpeedInsights from "@vercel/speed-insights/astro";
 import type { MarkdownHeading } from "astro";
 import { Icon } from "astro-icon/components";
 import ImageWrapper from "../components/misc/ImageWrapper.astro";
 import TOC from "../components/widget/TOC.astro";
 import { siteConfig } from "../config";
-import SpeedInsights from "@vercel/speed-insights/astro";
-import Analytics from "@vercel/analytics/astro";
 import {
 	BANNER_HEIGHT,
 	BANNER_HEIGHT_EXTEND,
