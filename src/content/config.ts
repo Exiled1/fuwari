@@ -19,6 +19,20 @@ const postsCollection = defineCollection({
 		nextSlug: z.string().default(""),
 	}),
 });
-export const collections = {
+
+const specCollection = defineCollection({
+	schema: z.object({
+		title: z.string().optional(),
+		description: z.string().optional(),
+	}),
+});
+
+type CollectionsConfig = {
+	posts: ReturnType<typeof defineCollection>;
+	spec: ReturnType<typeof defineCollection>;
+};
+
+export const collections: CollectionsConfig = {
 	posts: postsCollection,
+	spec: specCollection,
 };

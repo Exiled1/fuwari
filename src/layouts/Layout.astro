@@ -106,7 +106,7 @@ const bannerOffset =
 		))}
 		
 		<!-- Critical image preloading -->
-		<link rel="preload" as="image" href={url(profileConfig.avatar)}>
+		{profileConfig.avatar && <link rel="preload" as="image" href={url(profileConfig.avatar)}>}
 
 		<!-- Set the theme before the page is rendered to avoid a flash -->
 		<script is:inline define:vars={{DEFAULT_THEME, LIGHT_MODE, DARK_MODE, AUTO_MODE, BANNER_HEIGHT_EXTEND, PAGE_WIDTH, configHue}}>
@@ -531,7 +531,7 @@ let pswpLoaded = false
 
 async function loadPhotoSwipe() {
 	if (!pswpLoaded) {
-		const [lightboxModule, styleModule, pswpModule] = await Promise.all([
+		const [lightboxModule, , pswpModule] = await Promise.all([
 			import("photoswipe/lightbox"),
 			import("photoswipe/style.css"),
 			import("photoswipe")
@@ -559,7 +559,7 @@ async function createPhotoSwipe() {
 		doubleTapAction: 'zoom',
 	})
 
-	lightbox.addFilter("domItemData", (itemData, element) => {
+	lightbox.addFilter("domItemData", (itemData: any, element: any) => {
 		if (element instanceof HTMLImageElement) {
 			itemData.src = element.src
 
