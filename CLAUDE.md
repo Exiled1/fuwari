@@ -63,6 +63,8 @@ This is a **Fuwari** blog template built with Astro, featuring a static site gen
 - **Pagefind** integration for static site search (built during production)
 - Archive page with dynamic filtering capabilities
 - Table of contents (TOC) generation with configurable depth
+  - TOC navigation uses instant scrolling (no smooth scroll animation)
+  - Implemented via custom scroll behavior override in `handleAnchorClick`
 - Smooth page transitions via Swup
 
 ### Build Pipeline
