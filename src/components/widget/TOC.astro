@@ -49,9 +49,9 @@ const maxLevel = siteConfig.toc.depth;
                     {heading.depth == minDepth + 1 && <div class="transition w-2 h-2 rounded-[0.1875rem] bg-[var(--toc-badge-bg)]"></div>}
                     {heading.depth == minDepth + 2 && <div class="transition w-1.5 h-1.5 rounded-sm bg-black/5 dark:bg-white/10"></div>}
                 </div>
-                <div class:list={["transition text-sm", {
-                    "text-50": heading.depth == minDepth || heading.depth == minDepth + 1,
-                    "text-30": heading.depth == minDepth + 2,
+                <div class:list={["transition text-sm text-gray-800 dark:text-gray-200", {
+                    "font-medium": heading.depth == minDepth || heading.depth == minDepth + 1,
+                    "opacity-70": heading.depth == minDepth + 2,
                 }]}>{removeTailingHash(heading.text)}</div>
             </a>
     )}
@@ -182,7 +182,24 @@ class TableOfContents extends HTMLElement {
             .find((element) => element instanceof HTMLAnchorElement);
 
         if (anchor) {
+            event.preventDefault();
+            
+            // Override scroll behavior to instant
+            const originalScrollBehavior = document.documentElement.style.scrollBehavior;
+            document.documentElement.style.scrollBehavior = 'auto';
+            
             const id = decodeURIComponent(anchor.hash?.substring(1));
+            const targetElement = document.getElementById(id);
+            
+            if (targetElement) {
+                targetElement.scrollIntoView();
+            }
+            
+            // Restore original scroll behavior after a brief delay
+            setTimeout(() => {
+                document.documentElement.style.scrollBehavior = originalScrollBehavior;
+            }, 10);
+            
             const idx = this.headingIdxMap.get(id);
             if (idx !== undefined) {
                 this.anchorNavTarget = this.headings[idx];

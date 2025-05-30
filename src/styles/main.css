@@ -109,6 +109,16 @@
     );
   }
 
+  #toc-wrapper {
+    max-width: min(16rem, calc(100vw - var(--page-width) - 2rem));
+  }
+
+  @media (max-width: calc(75rem + 32rem + 2rem)) {
+    #toc-wrapper {
+      display: none !important;
+    }
+  }
+
   .hide-scrollbar {
     scrollbar-width: none;
     -ms-overflow-style: none;
