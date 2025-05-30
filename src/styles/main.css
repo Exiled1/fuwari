@@ -1,3 +1,19 @@
+@import "@fontsource/roboto/400.css" layer(fonts);
+@import "@fontsource/roboto/500.css" layer(fonts);
+@import "@fontsource/roboto/700.css" layer(fonts);
+@import "@fontsource-variable/jetbrains-mono" layer(fonts);
+
+@layer fonts {
+  @font-face {
+    font-family: 'Roboto';
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'JetBrains Mono Variable';
+    font-display: swap;
+  }
+}
+
 @tailwind components;
 
 @layer components {
