@@ -1,3 +1,19 @@
+@import "@fontsource/roboto/400.css" layer(fonts);
+@import "@fontsource/roboto/500.css" layer(fonts);
+@import "@fontsource/roboto/700.css" layer(fonts);
+@import "@fontsource-variable/jetbrains-mono" layer(fonts);
+
+@layer fonts {
+  @font-face {
+    font-family: 'Roboto';
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'JetBrains Mono Variable';
+    font-display: swap;
+  }
+}
+
 @tailwind components;
 
 @layer components {
@@ -91,6 +107,16 @@
       black calc(100% - 2rem),
       transparent 100%
     );
+  }
+
+  #toc-wrapper {
+    max-width: min(16rem, calc(100vw - var(--page-width) - 2rem));
+  }
+
+  @media (max-width: calc(75rem + 32rem + 2rem)) {
+    #toc-wrapper {
+      display: none !important;
+    }
   }
 
   .hide-scrollbar {
