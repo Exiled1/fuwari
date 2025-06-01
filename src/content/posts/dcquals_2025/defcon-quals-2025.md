@@ -10,3 +10,11 @@ lang: ''
 ---
 
 # DEFCON Quals - Totem
+
+## Description
+
+Have Fun!
+
+# ACT_0x01: Go away
+
+DEFCON Quals! This year was so damn Rev heavy.

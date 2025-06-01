@@ -41,6 +41,33 @@
   strong {
     @apply transition;
   }
+  
+  /* Optimize mobile scrolling performance */
+  @media (max-width: 768px) {
+    body {
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Create composite layers for smooth scrolling */
+    #banner,
+    #navbar-wrapper,
+    #main-grid,
+    #swup-container {
+      will-change: transform;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
+    
+    /* Reduce transitions on mobile to prevent janky scrolling */
+    * {
+      transition-duration: 100ms !important;
+    }
+    
+    /* Disable complex animations during scroll */
+    .onload-animation {
+      animation-duration: 150ms;
+    }
+  }
   .card-shadow {
     @apply drop-shadow-[0_2px_4px_rgba(0,0,0,0.005)];
   }
@@ -110,7 +137,7 @@
   }
 
   #toc-wrapper {
-    max-width: min(16rem, calc(100vw - var(--page-width) - 2rem));
+    max-width: min(12rem, calc(100vw - var(--page-width) - 2rem));
   }
 
   @media (max-width: calc(75rem + 32rem + 2rem)) {

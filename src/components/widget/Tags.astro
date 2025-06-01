@@ -11,4 +11,4 @@ interface Props {
 const className = Astro.props.class;
 const style = Astro.props.style;
 ---
-<TagsWidget tags={tags} client:load class={className} style={style} />
+<TagsWidget tags={tags} client:idle class={className} style={style} />

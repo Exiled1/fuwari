@@ -1,9 +1,12 @@
-/* Page transition animations with Swup */
+/* Page transition animations with Swup - optimized for mobile */
 html.is-changing .transition-swup-fade {
-  @apply transition-all duration-200;
+  transition-property: opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
 }
 html.is-animating .transition-swup-fade {
-  @apply opacity-0 translate-y-4;
+  opacity: 0;
+  transform: translateY(1rem);
 }
 
 /* Fade-in animations for components */
@@ -23,6 +26,18 @@ html.is-animating .transition-swup-fade {
   opacity: 0;
   animation: 300ms fade-in-up;
   animation-fill-mode: forwards;
+}
+
+/* Reduce animations on mobile for performance */
+@media (max-width: 768px) {
+  .onload-animation {
+    animation-duration: 200ms;
+  }
+  
+  /* Disable post content staggered animations on mobile */
+  #post-container :nth-child(n) {
+    animation-delay: 0ms !important;
+  }
 }
 #navbar {
   animation-delay: 0ms;
